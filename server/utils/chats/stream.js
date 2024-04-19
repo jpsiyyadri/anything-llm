@@ -3,11 +3,13 @@ const { DocumentManager } = require("../DocumentManager");
 const { WorkspaceChats } = require("../../models/workspaceChats");
 const { getVectorDbClass, getLLMProvider } = require("../helpers");
 const { writeResponseChunk } = require("../helpers/chat/responses");
+const { grepAgents } = require("./agents");
 const {
   grepCommand,
   VALID_COMMANDS,
   chatPrompt,
   recentChatHistory,
+  sourceIdentifier,
 } = require("./index");
 
 const VALID_CHAT_MODE = ["chat", "query"];
@@ -34,6 +36,17 @@ async function streamChatWithWorkspace(
     writeResponseChunk(response, data);
     return;
   }
+
+  // If is agent enabled chat we will exit this flow early.
+  const isAgentChat = await grepAgents({
+    uuid,
+    response,
+    message,
+    user,
+    workspace,
+    thread,
+  });
+  if (isAgentChat) return;
 
   const LLMConnector = getLLMProvider({
     provider: workspace?.chatProvider,
@@ -80,6 +93,7 @@ async function streamChatWithWorkspace(
   let completeText;
   let contextTexts = [];
   let sources = [];
+  let pinnedDocIdentifiers = [];
   const { rawHistory, chatHistory } = await recentChatHistory({
     user,
     workspace,
@@ -98,6 +112,7 @@ async function streamChatWithWorkspace(
     .then((pinnedDocs) => {
       pinnedDocs.forEach((doc) => {
         const { pageContent, ...metadata } = doc;
+        pinnedDocIdentifiers.push(sourceIdentifier(doc));
         contextTexts.push(doc.pageContent);
         sources.push({
           text:
@@ -116,6 +131,7 @@ async function streamChatWithWorkspace(
           LLMConnector,
           similarityThreshold: workspace?.similarityThreshold,
           topN: workspace?.topN,
+          filterIdentifiers: pinnedDocIdentifiers,
         })
       : {
           contextTexts: [],
@@ -193,20 +209,30 @@ async function streamChatWithWorkspace(
     });
   }
 
-  const { chat } = await WorkspaceChats.new({
-    workspaceId: workspace.id,
-    prompt: message,
-    response: { text: completeText, sources, type: chatMode },
-    threadId: thread?.id || null,
-    user,
-  });
+  if (completeText?.length > 0) {
+    const { chat } = await WorkspaceChats.new({
+      workspaceId: workspace.id,
+      prompt: message,
+      response: { text: completeText, sources, type: chatMode },
+      threadId: thread?.id || null,
+      user,
+    });
+
+    writeResponseChunk(response, {
+      uuid,
+      type: "finalizeResponseStream",
+      close: true,
+      error: false,
+      chatId: chat.id,
+    });
+    return;
+  }
 
   writeResponseChunk(response, {
     uuid,
     type: "finalizeResponseStream",
     close: true,
     error: false,
-    chatId: chat.id,
   });
   return;
 }
