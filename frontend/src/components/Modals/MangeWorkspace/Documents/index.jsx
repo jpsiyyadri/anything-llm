@@ -1,7 +1,7 @@
 import { ArrowsDownUp } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
-import Workspace from "../../../../models/workspace";
 import System from "../../../../models/system";
+import Workspace from "../../../../models/workspace";
 import showToast from "../../../../utils/toast";
 import Directory from "./Directory";
 import WorkspaceDirectory from "./WorkspaceDirectory";
@@ -28,7 +28,10 @@ export default function DocumentSettings({ workspace, systemSettings }) {
 
   async function fetchKeys(refetchWorkspace = false) {
     setLoading(true);
-    const localFiles = await System.localFiles();
+    const localFiles = await System.localFiles(
+      workspace.slug
+    );
+    
     const currentWorkspace = refetchWorkspace
       ? await Workspace.bySlug(workspace.slug)
       : workspace;

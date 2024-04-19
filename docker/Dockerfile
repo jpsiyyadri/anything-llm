@@ -68,10 +68,10 @@ RUN echo "Preparing build of AnythingLLM image for non-ARM architecture"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Install system dependencies
-# hadolint ignore=DL3008,DL3013
+# Install SQLite3 and other system dependencies
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+        sqlite3 \
         curl gnupg libgfortran5 libgbm1 tzdata netcat \
         libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 \
         libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libx11-6 libx11-xcb1 libxcb1 \
@@ -91,6 +91,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
 RUN groupadd -g "$ARG_GID" anythingllm && \
     useradd -l -u "$ARG_UID" -m -d /app -s /bin/bash -g anythingllm anythingllm && \
     mkdir -p /app/frontend/ /app/server/ /app/collector/ && chown -R anythingllm:anythingllm /app
+
+
+
 
 # Copy docker helper scripts
 COPY ./docker/docker-entrypoint.sh /usr/local/bin/
@@ -167,7 +170,7 @@ ENV NODE_ENV=production
 ENV ANYTHING_LLM_RUNTIME=docker
 
 # Expose the server port
-EXPOSE 3001
+EXPOSE 3001 9229 9230
 
 # Setup the healthcheck
 HEALTHCHECK --interval=1m --timeout=10s --start-period=1m \

@@ -29,6 +29,10 @@ const {
   LOGO_FILENAME,
 } = require("../utils/files/logo");
 const { Telemetry } = require("../models/telemetry");
+const { UserDocuments } = require("../models/userDocuments");
+const { Document } = require("../models/documents");
+const { Workspace } = require("../models/workspace");
+const { WorkspaceUser } = require("../models/workspaceUsers");
 const { WelcomeMessages } = require("../models/welcomeMessages");
 const { ApiKey } = require("../models/apiKeys");
 const { getCustomModels } = require("../utils/helpers/customModels");
@@ -285,11 +289,50 @@ function systemEndpoints(app) {
   );
 
   app.get(
-    "/system/local-files",
+    "/system/local-files/:slug",
     [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
-    async (_, response) => {
+    async (request, response) => {
       try {
+        // workspaceId is an integer, so we can safely parse it.
+        const { slug } = request.params;
+        // fetch user id from session
+
+
+        const workspace = await Workspace.get({ slug: slug });
+        if (!workspace) {
+          response.sendStatus(404).end();
+          return;
+        }
+        const workspaceId = workspace.id;
+
+        const user = await WorkspaceUser.get({ workspace_id: workspaceId });
+        if (!user) {
+          response.sendStatus(401).end();
+          return;
+        }
+
+
         const localFiles = await viewLocalFiles();
+
+        const userDocuments = await UserDocuments.get({ userId: user.user_id });
+
+        const workspaceDocuments = userDocuments.map((doc) => doc.filename);
+        const localFilesInWorkspace = localFiles.items.map((folder) => {
+          if (folder.type === "folder") {
+            return {
+              ...folder,
+              items: folder.items.filter(
+                (file) =>
+                  file.type === "file" &&
+                  workspaceDocuments.includes(`${file.filename}`)
+              ),
+            };
+          }
+          return folder;
+        });
+
+        localFiles.items = localFilesInWorkspace;
+
         response.status(200).json({ localFiles });
       } catch (e) {
         console.log(e.message, e);

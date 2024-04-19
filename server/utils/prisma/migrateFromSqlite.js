@@ -234,6 +234,18 @@ async function migrateData() {
       });
     });
 
+    // Step 11: Migrate user_documents table
+    await migrateTable("user_documents", async (row) => {
+      return prisma.user_documents.create({
+        data: {
+          user: row.userId,
+          filename: row.filename,
+          docpath: row.docpath,
+          createdAt: new Date(row.createdAt),
+        },
+      });
+    });
+
     console.log("Data migration completed successfully");
   } catch (error) {
     console.error("Data migration failed:", error);

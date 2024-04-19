@@ -6,6 +6,7 @@ const { Workspace } = require("../models/workspace");
 const { Document } = require("../models/documents");
 const { DocumentVectors } = require("../models/vectors");
 const { WorkspaceChats } = require("../models/workspaceChats");
+const { UserDocuments } = require("../models/userDocuments");
 const { getVectorDbClass } = require("../utils/helpers");
 const { handleFileUpload, handlePfpUpload } = require("../utils/files/multer");
 const { validatedRequest } = require("../utils/middleware/validatedRequest");
@@ -120,11 +121,16 @@ function workspaceEndpoints(app) {
         return;
       }
 
-      const { success, reason } = await Collector.processDocument(originalname);
+      const { success, reason, documents } = await Collector.processDocument(originalname);
       if (!success) {
         response.status(500).json({ success: false, error: reason }).end();
         return;
       }
+
+      documents.forEach(async (doc) => {
+        await UserDocuments.new(doc.id, response.locals?.user?.id);
+      });
+
 
       Collector.log(
         `Document ${originalname} uploaded processed and successfully. It is now available in documents.`

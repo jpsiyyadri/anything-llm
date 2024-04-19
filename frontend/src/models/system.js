@@ -35,8 +35,10 @@ const System = {
       .then((res) => res.results)
       .catch(() => null);
   },
-  localFiles: async function () {
-    return await fetch(`${API_BASE}/system/local-files`, {
+  localFiles: async function (
+    slug = null,
+  ) {
+    return await fetch(`${API_BASE}/system/local-files/${slug ? `${slug}` : ""}`, {
       headers: baseHeaders(),
     })
       .then((res) => {

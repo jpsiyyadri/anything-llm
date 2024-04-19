@@ -215,3 +215,13 @@ model event_logs {
 
   @@index([event])
 }
+
+// custom modal for documents and users
+
+model user_documents {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  filename      String
+  docpath      String
+  createdAt DateTime @default(now())
+}
