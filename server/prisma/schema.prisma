@@ -241,7 +241,7 @@ model event_logs {
 model user_documents {
   id         Int      @id @default(autoincrement())
   userId     Int
-  filename      String
-  docpath      String
+  fileId      String
+  location      String
   createdAt DateTime @default(now())
 }

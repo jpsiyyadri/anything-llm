@@ -3,13 +3,13 @@ const { EventLogs } = require("./eventLogs");
 
 
 const UserDocuments = {
-    new: async function(filename, userId, docpath) {
+    new: async function(fileId, userId, location) {
         try {
             const userDocument = await prisma.user_documents.create({
                 data: {
-                    filename: filename,
+                    fileId: fileId,
                     userId: userId,
-                    docpath: docpath,
+                    location: location,
                 },
             });
             return userDocument;

@@ -238,9 +238,9 @@ async function migrateData() {
     await migrateTable("user_documents", async (row) => {
       return prisma.user_documents.create({
         data: {
-          user: row.userId,
-          filename: row.filename,
-          docpath: row.docpath,
+          userId: row.userId,
+          fileID: row.fileID,
+          location: row.location,
           createdAt: new Date(row.createdAt),
         },
       });

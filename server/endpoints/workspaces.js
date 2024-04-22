@@ -128,7 +128,7 @@ function workspaceEndpoints(app) {
       }
 
       documents.forEach(async (doc) => {
-        await UserDocuments.new(doc.id, response.locals?.user?.id);
+        await UserDocuments.new(doc.id, response.locals?.user?.id, doc?.location);
       });
 
 

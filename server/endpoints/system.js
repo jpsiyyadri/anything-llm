@@ -297,26 +297,11 @@ function systemEndpoints(app) {
         const { slug } = request.params;
         // fetch user id from session
 
-
-        const workspace = await Workspace.get({ slug: slug });
-        if (!workspace) {
-          response.sendStatus(404).end();
-          return;
-        }
-        const workspaceId = workspace.id;
-
-        const user = await WorkspaceUser.get({ workspace_id: workspaceId });
-        if (!user) {
-          response.sendStatus(401).end();
-          return;
-        }
-
-
         const localFiles = await viewLocalFiles();
 
-        const userDocuments = await UserDocuments.get({ userId: user.user_id });
+        const userDocuments = await UserDocuments.get({ userId: response.locals.user.id });
 
-        const workspaceDocuments = userDocuments.map((doc) => doc.filename);
+        const workspaceDocuments = userDocuments.map((doc) => doc.fileId);
         const localFilesInWorkspace = localFiles.items.map((folder) => {
           if (folder.type === "folder") {
             return {
@@ -324,7 +309,7 @@ function systemEndpoints(app) {
               items: folder.items.filter(
                 (file) =>
                   file.type === "file" &&
-                  workspaceDocuments.includes(`${file.filename}`)
+                  workspaceDocuments.includes(`${file.id}`)
               ),
             };
           }
